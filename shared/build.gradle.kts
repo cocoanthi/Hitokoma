@@ -3,8 +3,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.jetbrainsCompose) // プラグインの適用
-    alias(libs.plugins.compose.compiler) // ← これがshared側に必要です！
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 kotlin {
@@ -34,6 +36,10 @@ kotlin {
             //put your multiplatform dependencies here
             implementation(compose.material3) // または compose.material
             implementation(compose.components.uiToolingPreview)
+            implementation(libs.kotlinx.datetime)
+            // RoomのランタイムとSQLiteドライバーを追加
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -43,6 +49,16 @@ kotlin {
             implementation(compose.preview)
         }
     }
+}
+
+// Roomのコンパイラ（コード自動生成）を設定
+dependencies {
+    ksp(libs.androidx.room.compiler)
+}
+
+// Roomのスキーマ出力先を設定
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 android {
