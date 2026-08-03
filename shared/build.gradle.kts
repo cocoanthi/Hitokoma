@@ -40,6 +40,12 @@ kotlin {
             // RoomのランタイムとSQLiteドライバーを追加
             implementation(libs.androidx.room.runtime)
             implementation(libs.sqlite.bundled)
+            // FileKit (Compose Multiplatform用ファイル/画像ピッカー)
+            implementation("io.github.vinceglb:filekit-core:0.8.8")
+            implementation("io.github.vinceglb:filekit-compose:0.8.8")
+            implementation(libs.koin.core)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
