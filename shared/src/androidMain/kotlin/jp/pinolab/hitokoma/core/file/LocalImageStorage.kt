@@ -12,4 +12,10 @@ actual class LocalImageStorage(private val context: Context) {
         targetFile.writeBytes(bytes)
         targetFile.absolutePath // 例: /data/user/0/com.example/files/photos/2026-08-01.jpg
     }
+
+    actual suspend fun deleteImage(path: String) {
+        withContext(Dispatchers.IO) {
+            File(path).delete() // 存在しない場合は false が返るだけで例外にはならない
+        }
+    }
 }
