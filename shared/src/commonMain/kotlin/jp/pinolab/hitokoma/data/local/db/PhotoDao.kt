@@ -18,14 +18,6 @@ interface PhotoDao {
     @Query("SELECT * FROM daily_photos WHERE dateString = :dateString LIMIT 1")
     fun observePhotoByDate(dateString: String): Flow<PhotoEntity?>
 
-    // カレンダー表示用: 指定年月（例: "2026-08%"）の写真一覧を取得
-    @Query("SELECT * FROM daily_photos WHERE dateString LIKE :yearMonthPrefix || '%' ORDER BY dateString ASC")
-    fun observePhotosByYearMonth(yearMonthPrefix: String): Flow<List<PhotoEntity>>
-
-    // 1年前の今日用: 指定した月日（例: "%-08-01"）の過去の写真一覧を取得
-    @Query("SELECT * FROM daily_photos WHERE dateString LIKE '%-' || :monthDaySuffix ORDER BY dateString DESC")
-    fun observePhotosOnThisDay(monthDaySuffix: String): Flow<List<PhotoEntity>>
-
     // 一覧表示用: 登録済みの写真を新しい日付順ですべて取得
     @Query("SELECT * FROM daily_photos ORDER BY dateString DESC")
     fun observeAllPhotos(): Flow<List<PhotoEntity>>

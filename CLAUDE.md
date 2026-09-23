@@ -44,13 +44,12 @@ sharedモジュールは`shared/src/commonMain/kotlin/jp/pinolab/hitokoma/`配�
 
 ### データモデル
 
-`daily_photos`（Room）はISO-8601形式の日付文字列（`dateString`、例: `"2026-08-01"`）を主キーとしており、主キー制約と`OnConflictStrategy.REPLACE`によるupsertによって「1日1枚」をDBレベルで強制しています。`PhotoDao`は月別カレンダー表示向けのprefix `LIKE`クエリ（`observePhotosByYearMonth`）と、「過去の同じ日」検索向けのsuffix `LIKE`クエリ（`observePhotosOnThisDay`、`"-MM-dd"`サフィックスでマッチ）もサポートしています。
+`daily_photos`（Room）はISO-8601形式の日付文字列（`dateString`、例: `"2026-08-01"`）を主キーとしており、主キー制約と`OnConflictStrategy.REPLACE`によるupsertによって「1日1枚」をDBレベルで強制しています。
 
 「1日1枚」ルールの本体は`SaveDailyPhotoUseCase`です。対象日に既存の写真がないかをチェックし、`allowOverwrite = true`が渡されない限り`Result.failure(PhotoAlreadyExistsException)`を返します。`PhotoSelectorViewModel`はこの例外を汎用エラーとしてではなく、上書き確認ダイアログの表示トリガーとして扱います。
 
 ### expect/actualによるプラットフォームコード
 
-- `Platform.kt` / `Platform.android.kt` / `Platform.ios.kt` — 基本的なプラットフォーム情報（`getPlatform()`）。
 - `core/file/LocalImageStorage` — `expect class`で、Android向けの`actual`実装（`context.filesDir/photos/`へ書き込み）はありますが、**iOS向けの`actual`実装はまだありません**。実装を追加するまでiOSターゲットはコンパイルできません。
 
 ### 現時点で未完成の配線

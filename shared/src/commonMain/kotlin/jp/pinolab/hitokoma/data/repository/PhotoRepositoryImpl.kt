@@ -25,27 +25,6 @@ class PhotoRepositoryImpl(
         return photoDao.observePhotoByDate(date.toString()).map { it?.toDomain() }
     }
 
-    override fun observePhotosForMonth(year: Int, month: Int): Flow<List<DailyPhoto>> {
-        // "2026-08" 形式のプレフィックス文字列を作成
-        val monthFormatted = month.toString().padStart(2, '0')
-        val prefix = "$year-$monthFormatted"
-
-        return photoDao.observePhotosByYearMonth(prefix).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
-
-    override fun observePhotosOnThisDay(month: Int, day: Int): Flow<List<DailyPhoto>> {
-        // "08-01" 形式のサフィックス文字列を作成
-        val monthFormatted = month.toString().padStart(2, '0')
-        val dayFormatted = day.toString().padStart(2, '0')
-        val suffix = "$monthFormatted-$dayFormatted"
-
-        return photoDao.observePhotosOnThisDay(suffix).map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
-
     override fun observeAllPhotos(): Flow<List<DailyPhoto>> {
         return photoDao.observeAllPhotos().map { entities ->
             entities.map { it.toDomain() }
