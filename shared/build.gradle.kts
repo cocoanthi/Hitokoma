@@ -53,13 +53,18 @@ kotlin {
         // Android 側のプレビュー表示を動作させるために以下も推奨
         androidMain.dependencies {
             implementation(compose.preview)
+            implementation(libs.koin.android)
         }
     }
 }
 
 // Roomのコンパイラ（コード自動生成）を設定
+// KMP では各ターゲットごとに KSP を適用する必要がある
 dependencies {
-    ksp(libs.androidx.room.compiler)
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspIosX64", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
 
 // Roomのスキーマ出力先を設定
