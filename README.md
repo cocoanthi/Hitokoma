@@ -3,6 +3,10 @@
 1日1枚の写真に短いコメントを添えて残す、「今日の一枚」日記アプリです。
 Kotlin Multiplatform + Compose Multiplatform で Android / iOS 向けに開発しています。
 
+2026/9/24(水)時点　※開発中
+
+https://github.com/user-attachments/assets/1ad58ba4-efc3-4b37-8cbd-e0a99f0b125f
+
 ## 主な機能
 
 - **今日の一枚** — ギャラリーから写真を1枚選び、コメントを添えて保存します。当日に登録した写真は、その日のうちはこの画面に表示されます。
