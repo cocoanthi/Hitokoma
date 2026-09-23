@@ -3,6 +3,8 @@ package jp.pinolab.hitokoma.di
 import jp.pinolab.hitokoma.data.local.db.AppDatabase
 import jp.pinolab.hitokoma.data.repository.PhotoRepositoryImpl
 import jp.pinolab.hitokoma.domain.repository.PhotoRepository
+import jp.pinolab.hitokoma.feature.gallery.domain.ObserveAllPhotosUseCase
+import jp.pinolab.hitokoma.feature.gallery.presentation.PhotoListViewModel
 import jp.pinolab.hitokoma.feature.selector.domain.SaveDailyPhotoUseCase
 import jp.pinolab.hitokoma.feature.selector.presentation.PhotoSelectorViewModel
 import org.koin.core.module.Module
@@ -27,5 +29,10 @@ val selectorModule = module {
     viewModelOf(::PhotoSelectorViewModel)
 }
 
+val galleryModule = module {
+    factoryOf(::ObserveAllPhotosUseCase)
+    viewModelOf(::PhotoListViewModel)
+}
+
 val sharedModules: List<Module>
-    get() = listOf(platformModule, dataModule, selectorModule)
+    get() = listOf(platformModule, dataModule, selectorModule, galleryModule)

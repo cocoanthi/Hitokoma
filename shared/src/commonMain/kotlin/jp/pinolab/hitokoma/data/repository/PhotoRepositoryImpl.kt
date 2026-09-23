@@ -42,6 +42,12 @@ class PhotoRepositoryImpl(
         }
     }
 
+    override fun observeAllPhotos(): Flow<List<DailyPhoto>> {
+        return photoDao.observeAllPhotos().map { entities ->
+            entities.map { it.toDomain() }
+        }
+    }
+
     override suspend fun deletePhoto(date: LocalDate) {
         photoDao.deletePhoto(date.toString())
     }

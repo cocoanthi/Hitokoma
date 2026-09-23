@@ -22,6 +22,10 @@ interface PhotoDao {
     @Query("SELECT * FROM daily_photos WHERE dateString LIKE '%-' || :monthDaySuffix ORDER BY dateString DESC")
     fun observePhotosOnThisDay(monthDaySuffix: String): Flow<List<PhotoEntity>>
 
+    // 一覧表示用: 登録済みの写真を新しい日付順ですべて取得
+    @Query("SELECT * FROM daily_photos ORDER BY dateString DESC")
+    fun observeAllPhotos(): Flow<List<PhotoEntity>>
+
     @Query("DELETE FROM daily_photos WHERE dateString = :dateString")
     suspend fun deletePhoto(dateString: String)
 }

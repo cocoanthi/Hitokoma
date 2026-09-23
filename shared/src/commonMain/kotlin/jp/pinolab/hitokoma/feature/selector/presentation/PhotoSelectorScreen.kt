@@ -139,7 +139,8 @@ private fun TodayPhotoScreen() {
 @Composable
 fun PhotoSelectorScreen(
     viewModel: PhotoSelectorViewModel,
-    imageStorage: LocalImageStorage // DI(Koin等)またはLocalProviderから渡す
+    imageStorage: LocalImageStorage, // DI(Koin等)またはLocalProviderから渡す
+    modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
@@ -165,7 +166,7 @@ fun PhotoSelectorScreen(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .safeDrawingPadding() // ステータスバー・ナビゲーションバー・ノッチ・IMEを避ける
             .padding(16.dp)
