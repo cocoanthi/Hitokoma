@@ -3,6 +3,7 @@ package jp.pinolab.hitokoma.feature.selector.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import jp.pinolab.hitokoma.domain.model.DailyPhoto
+import jp.pinolab.hitokoma.feature.selector.domain.ObserveTodayPhotoUseCase
 import jp.pinolab.hitokoma.feature.selector.domain.PhotoAlreadyExistsException
 import jp.pinolab.hitokoma.feature.selector.domain.SaveDailyPhotoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,11 +16,21 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 class PhotoSelectorViewModel(
-    private val saveDailyPhotoUseCase: SaveDailyPhotoUseCase
+    private val saveDailyPhotoUseCase: SaveDailyPhotoUseCase,
+    observeTodayPhotoUseCase: ObserveTodayPhotoUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PhotoSelectorUiState())
     val uiState: StateFlow<PhotoSelectorUiState> = _uiState.asStateFlow()
+
+    init {
+        // 今日の日付と登録済みの写真を監視（登録・日付の切り替わりが画面に反映される）
+        viewModelScope.launch {
+            observeTodayPhotoUseCase().collect { (today, todayPhoto) ->
+                _uiState.update { it.copy(today = today, todayPhoto = todayPhoto) }
+            }
+        }
+    }
 
     /**
      * 端末のギャラリーから写真が選択されたとき
@@ -73,8 +84,11 @@ class PhotoSelectorViewModel(
 
             result.fold(
                 onSuccess = {
+                    // 登録済み表示に切り替わるので、選択中の画像とコメントはクリアする
                     _uiState.update {
                         it.copy(
+                            selectedImagePath = null,
+                            comment = "",
                             isSaving = false,
                             isSaveSuccess = true
                         )

@@ -23,7 +23,13 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import jp.pinolab.hitokoma.core.file.LocalImageStorage
+import jp.pinolab.hitokoma.core.image.LocalImage
+import jp.pinolab.hitokoma.core.time.toJapaneseString
+import jp.pinolab.hitokoma.domain.model.DailyPhoto
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
@@ -165,6 +171,15 @@ fun PhotoSelectorScreen(
         }
     }
 
+    // 今日すでに登録済みなら、その日のあいだは登録した写真を表示する
+    uiState.todayPhoto?.let { todayPhoto ->
+        RegisteredTodayPhoto(
+            photo = todayPhoto,
+            modifier = modifier
+        )
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -195,5 +210,63 @@ fun PhotoSelectorScreen(
         ) {
             Text("今日の一枚として登録")
         }
+    }
+}
+/**
+ * 今日登録済みの写真を表示する
+ */
+@Composable
+private fun RegisteredTodayPhoto(
+    photo: DailyPhoto,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .safeDrawingPadding() // ステータスバー・ナビゲーションバー・ノッチ・IMEを避ける
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "今日の一枚",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = photo.date.toJapaneseString(),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        LocalImage(
+            path = photo.imagePath,
+            contentDescription = "${photo.date.toJapaneseString()}の写真",
+            maxSize = 1080,
+            modifier = Modifier
+                .widthIn(max = 480.dp) // 横向きで大きくなりすぎないようにする
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(24.dp))
+        )
+
+        if (photo.comment.isNotBlank()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = photo.comment,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "明日また新しい一枚を選びましょう",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

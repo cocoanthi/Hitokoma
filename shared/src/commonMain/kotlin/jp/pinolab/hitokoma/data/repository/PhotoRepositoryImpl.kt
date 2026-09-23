@@ -21,6 +21,10 @@ class PhotoRepositoryImpl(
         return photoDao.getPhotoByDate(date.toString())?.toDomain()
     }
 
+    override fun observePhotoByDate(date: LocalDate): Flow<DailyPhoto?> {
+        return photoDao.observePhotoByDate(date.toString()).map { it?.toDomain() }
+    }
+
     override fun observePhotosForMonth(year: Int, month: Int): Flow<List<DailyPhoto>> {
         // "2026-08" 形式のプレフィックス文字列を作成
         val monthFormatted = month.toString().padStart(2, '0')

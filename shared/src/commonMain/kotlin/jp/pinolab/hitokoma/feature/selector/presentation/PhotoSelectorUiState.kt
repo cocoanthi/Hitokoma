@@ -1,6 +1,11 @@
 package jp.pinolab.hitokoma.feature.selector.presentation
 
+import jp.pinolab.hitokoma.domain.model.DailyPhoto
+import kotlinx.datetime.LocalDate
+
 data class PhotoSelectorUiState(
+    val today: LocalDate? = null,           // 今日の日付（日付が変わると更新される）
+    val todayPhoto: DailyPhoto? = null,     // 今日すでに登録済みの写真（未登録なら null）
     val selectedImagePath: String? = null, // 選択中の画像パス
     val comment: String = "",               // コメント入力値
     val isSaving: Boolean = false,          // 保存中プログレス表示フラグ

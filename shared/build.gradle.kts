@@ -49,6 +49,7 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
         }
         // Android 側のプレビュー表示を動作させるために以下も推奨
         androidMain.dependencies {
