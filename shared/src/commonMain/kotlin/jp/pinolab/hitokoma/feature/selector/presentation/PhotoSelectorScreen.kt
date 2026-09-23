@@ -164,7 +164,12 @@ fun PhotoSelectorScreen(
         }
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .safeDrawingPadding() // ステータスバー・ナビゲーションバー・ノッチ・IMEを避ける
+            .padding(16.dp)
+    ) {
         // 画像選択ボタン
         Button(onClick = { launcher.launch() }) {
             Text("ギャラリーから写真を選択")
