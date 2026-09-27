@@ -5,7 +5,7 @@ import jp.pinolab.hitokoma.data.repository.PhotoRepositoryImpl
 import jp.pinolab.hitokoma.domain.repository.PhotoRepository
 import jp.pinolab.hitokoma.feature.gallery.domain.DeleteDailyPhotoUseCase
 import jp.pinolab.hitokoma.feature.gallery.domain.ObserveAllPhotosUseCase
-import jp.pinolab.hitokoma.feature.gallery.presentation.PhotoListViewModel
+import jp.pinolab.hitokoma.feature.gallery.presentation.PhotoCalendarViewModel
 import jp.pinolab.hitokoma.feature.selector.domain.ObserveTodayPhotoUseCase
 import jp.pinolab.hitokoma.feature.selector.domain.SaveDailyPhotoUseCase
 import jp.pinolab.hitokoma.feature.selector.presentation.PhotoSelectorViewModel
@@ -35,7 +35,7 @@ val selectorModule = module {
 val galleryModule = module {
     factoryOf(::ObserveAllPhotosUseCase)
     factoryOf(::DeleteDailyPhotoUseCase)
-    viewModelOf(::PhotoListViewModel)
+    viewModelOf(::PhotoCalendarViewModel)
 }
 
 val sharedModules: List<Module>
