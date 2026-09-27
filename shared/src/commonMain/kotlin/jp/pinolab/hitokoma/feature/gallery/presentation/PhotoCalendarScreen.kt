@@ -35,12 +35,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,6 +52,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.core.PickerMode
+import io.github.vinceglb.filekit.core.PickerType
 import jp.pinolab.hitokoma.core.image.LocalImage
 import jp.pinolab.hitokoma.core.time.toJapaneseString
 import jp.pinolab.hitokoma.core.time.toJapaneseYearMonthString
@@ -57,6 +62,7 @@ import jp.pinolab.hitokoma.core.video.FullScreenDialogEffect
 import jp.pinolab.hitokoma.core.video.VideoPlayer
 import jp.pinolab.hitokoma.core.video.rememberVideoSharer
 import jp.pinolab.hitokoma.domain.model.DailyPhoto
+import kotlinx.coroutines.launch
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 
@@ -66,7 +72,8 @@ private val DayOfWeekLabels = listOf("日", "月", "火", "水", "木", "金", "
 @Composable
 fun PhotoCalendarScreen(
     viewModel: PhotoCalendarViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    debugMode: Boolean = false // デバッグビルドのみ true（写真の追加・動画の手動作成を出す）
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -111,6 +118,14 @@ fun PhotoCalendarScreen(
                     }
                 }
 
+                if (debugMode) {
+                    DebugPanel(
+                        month = uiState.displayedMonth,
+                        isCreatingVideo = uiState.isCreatingVideo,
+                        onCreateVideoClick = viewModel::onDebugCreateVideoClicked
+                    )
+                }
+
                 DayOfWeekRow()
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -119,7 +134,9 @@ fun PhotoCalendarScreen(
                     cells = uiState.cells,
                     today = uiState.today,
                     photosByDate = uiState.photosByDate,
-                    onDayClick = viewModel::onDayClicked
+                    onDayClick = viewModel::onDayClicked,
+                    // デバッグモードでは写真のない日もタップして写真を追加できる
+                    onEmptyDayClick = if (debugMode) viewModel::onDebugEmptyDayClicked else null
                 )
             }
         }
@@ -131,6 +148,17 @@ fun PhotoCalendarScreen(
         VideoPlayerDialog(
             path = videoPath,
             onDismiss = viewModel::onDismissVideo
+        )
+    }
+
+    // デバッグ用: 写真追加シート
+    uiState.debugAddPhoto?.let { addPhoto ->
+        DebugAddPhotoSheet(
+            state = addPhoto,
+            onImagePicked = viewModel::onDebugImagePicked,
+            onCommentChange = viewModel::onDebugCommentChanged,
+            onSaveClick = viewModel::onDebugSaveClicked,
+            onDismiss = viewModel::onDismissDebugAdd
         )
     }
 
@@ -165,7 +193,7 @@ fun PhotoCalendarScreen(
         )
     }
 
-    // 削除失敗時のエラーダイアログ
+    // 削除・動画作成などの失敗時のエラーダイアログ
     uiState.errorMessage?.let { message ->
         AlertDialog(
             onDismissRequest = viewModel::onErrorDismissed,
@@ -240,7 +268,8 @@ private fun CalendarGrid(
     cells: List<LocalDate?>,
     today: LocalDate,
     photosByDate: Map<LocalDate, DailyPhoto>,
-    onDayClick: (DailyPhoto) -> Unit
+    onDayClick: (DailyPhoto) -> Unit,
+    onEmptyDayClick: ((LocalDate) -> Unit)?
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         cells.chunked(7).forEach { week ->
@@ -258,6 +287,7 @@ private fun CalendarGrid(
                             photo = photosByDate[date],
                             isToday = date == today,
                             onClick = onDayClick,
+                            onEmptyClick = onEmptyDayClick,
                             modifier = cellModifier
                         )
                     }
@@ -273,6 +303,7 @@ private fun DayCell(
     photo: DailyPhoto?,
     isToday: Boolean,
     onClick: (DailyPhoto) -> Unit,
+    onEmptyClick: ((LocalDate) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(8.dp)
@@ -290,7 +321,11 @@ private fun DayCell(
                 else Modifier
             )
             .then(
-                if (photo != null) Modifier.clickable { onClick(photo) } else Modifier
+                when {
+                    photo != null -> Modifier.clickable { onClick(photo) }
+                    onEmptyClick != null -> Modifier.clickable { onEmptyClick(date) }
+                    else -> Modifier
+                }
             )
     ) {
         if (photo != null) {
@@ -440,6 +475,141 @@ private fun VideoPlayerDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("共有")
                 }
+            }
+        }
+    }
+}
+
+/**
+ * デバッグ用: 表示中の月の動画を手動で作成するボタンと、写真追加の案内
+ */
+@Composable
+private fun DebugPanel(
+    month: LocalDate,
+    isCreatingVideo: Boolean,
+    onCreateVideoClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+            .padding(12.dp)
+    ) {
+        Text(
+            text = "デバッグ",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.error
+        )
+
+        Text(
+            text = "空いている日をタップすると写真を追加できます",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = onCreateVideoClick,
+            enabled = !isCreatingVideo,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            if (isCreatingVideo) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("動画を作成中…")
+            } else {
+                Text("${month.monthNumber}月の動画を作成")
+            }
+        }
+    }
+}
+
+/**
+ * デバッグ用: 任意の日付に写真を追加するシート
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DebugAddPhotoSheet(
+    state: DebugAddPhotoState,
+    onImagePicked: (ByteArray) -> Unit,
+    onCommentChange: (String) -> Unit,
+    onSaveClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+
+    // 「今日の一枚」と同じく FileKit のギャラリーピッカーを使う
+    val launcher = rememberFilePickerLauncher(
+        type = PickerType.Image,
+        mode = PickerMode.Single
+    ) { file ->
+        file?.let { platformFile ->
+            scope.launch { onImagePicked(platformFile.readBytes()) }
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 24.dp, end = 24.dp, bottom = 24.dp)
+        ) {
+            Text(
+                text = "${state.date.toJapaneseString()}に写真を追加",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            state.imagePath?.let { path ->
+                LocalImage(
+                    path = path,
+                    contentDescription = "選択した写真",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(16.dp))
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            OutlinedButton(
+                onClick = { launcher.launch() },
+                enabled = !state.isSaving,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (state.imagePath == null) "画像を選択" else "画像を選び直す")
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = state.comment,
+                onValueChange = onCommentChange,
+                label = { Text("一言コメント") },
+                enabled = !state.isSaving,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = onSaveClick,
+                enabled = state.canSave,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("登録")
             }
         }
     }

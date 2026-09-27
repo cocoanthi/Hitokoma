@@ -40,12 +40,14 @@ private enum class AppTab(val label: String, val icon: ImageVector) {
 /**
  * @param openVideoMonth 通知から起動したときに再生するストーリー動画の月。指定されたらカレンダータブで再生する
  * @param onVideoMonthOpened openVideoMonth を処理したときに呼ばれる（同じ指定で何度も開かないように）
+ * @param debugMode デバッグビルドのみ true。カレンダーに写真の追加・動画の手動作成を出す
  */
 @Composable
 @Preview
 fun App(
     openVideoMonth: LocalDate? = null,
-    onVideoMonthOpened: () -> Unit = {}
+    onVideoMonthOpened: () -> Unit = {},
+    debugMode: Boolean = false
 ) {
     MaterialTheme {
         var selectedTab by rememberSaveable { mutableStateOf(AppTab.Today) }
@@ -98,7 +100,8 @@ fun App(
 
                     PhotoCalendarScreen(
                         viewModel = viewModel,
-                        modifier = contentModifier
+                        modifier = contentModifier,
+                        debugMode = debugMode
                     )
                 }
             }

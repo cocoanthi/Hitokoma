@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
+import jp.pinolab.hitokoma.android.BuildConfig
 import jp.pinolab.hitokoma.feature.monthlyvideo.MonthlyVideoNotifier
 import kotlinx.datetime.LocalDate
 
@@ -40,7 +41,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             App(
                 openVideoMonth = openVideoMonth,
-                onVideoMonthOpened = { openVideoMonth = null }
+                onVideoMonthOpened = { openVideoMonth = null },
+                debugMode = BuildConfig.DEBUG
             )
         }
     }

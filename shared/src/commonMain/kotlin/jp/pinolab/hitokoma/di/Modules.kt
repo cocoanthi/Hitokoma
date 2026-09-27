@@ -8,6 +8,7 @@ import jp.pinolab.hitokoma.domain.repository.PhotoRepository
 import jp.pinolab.hitokoma.feature.gallery.domain.DeleteDailyPhotoUseCase
 import jp.pinolab.hitokoma.feature.gallery.domain.ObserveAllPhotosUseCase
 import jp.pinolab.hitokoma.feature.gallery.presentation.PhotoCalendarViewModel
+import jp.pinolab.hitokoma.feature.monthlyvideo.domain.CreateMonthlyVideoUseCase
 import jp.pinolab.hitokoma.feature.monthlyvideo.domain.GenerateMonthlyVideoUseCase
 import jp.pinolab.hitokoma.feature.selector.domain.ObserveTodayPhotoUseCase
 import jp.pinolab.hitokoma.feature.selector.domain.SaveDailyPhotoUseCase
@@ -43,6 +44,7 @@ val galleryModule = module {
 }
 
 val monthlyVideoModule = module {
+    factoryOf(::CreateMonthlyVideoUseCase)
     factoryOf(::GenerateMonthlyVideoUseCase)
 }
 

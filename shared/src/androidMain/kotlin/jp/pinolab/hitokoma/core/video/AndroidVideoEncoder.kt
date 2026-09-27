@@ -41,14 +41,14 @@ import kotlin.coroutines.resumeWithException
 class AndroidVideoEncoder(private val context: Context) : VideoEncoder {
 
     override suspend fun encode(title: String, slides: List<VideoSlide>, outputPath: String) {
-        val framesDir = File(context.cacheDir, "story_frames")
+        // 手動作成と月初の自動生成が同時に動いても中間ファイルが混ざらないよう、呼び出しごとに別のディレクトリを使う
+        val framesDir = File(context.cacheDir, "story_frames_${System.nanoTime()}")
         val output = File(outputPath)
         // 書き出し途中のファイルを「生成済み」と判定しないよう、完成してからリネームする
         val tempOutput = File("$outputPath.tmp")
 
         try {
             val frames = withContext(Dispatchers.IO) {
-                framesDir.deleteRecursively()
                 framesDir.mkdirs()
                 output.parentFile?.mkdirs()
                 tempOutput.delete()

@@ -16,6 +16,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true // デバッグモードの判定（BuildConfig.DEBUG）に使う
     }
     packaging {
         resources {
