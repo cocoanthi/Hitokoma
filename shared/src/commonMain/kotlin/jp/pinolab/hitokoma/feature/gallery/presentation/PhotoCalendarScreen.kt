@@ -14,21 +14,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -42,9 +48,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import jp.pinolab.hitokoma.core.image.LocalImage
 import jp.pinolab.hitokoma.core.time.toJapaneseString
 import jp.pinolab.hitokoma.core.time.toJapaneseYearMonthString
+import jp.pinolab.hitokoma.core.video.FullScreenDialogEffect
+import jp.pinolab.hitokoma.core.video.VideoPlayer
+import jp.pinolab.hitokoma.core.video.rememberVideoSharer
 import jp.pinolab.hitokoma.domain.model.DailyPhoto
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
@@ -82,6 +93,24 @@ fun PhotoCalendarScreen(
                     onNextMonth = viewModel::onNextMonth
                 )
 
+                // 先月以前のストーリー動画が生成済みなら再生ボタンを出す
+                uiState.videoPath?.let {
+                    FilledTonalButton(
+                        onClick = viewModel::onPlayVideo,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("${uiState.displayedMonth.monthNumber}月のストーリーを見る")
+                    }
+                }
+
                 DayOfWeekRow()
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -94,6 +123,15 @@ fun PhotoCalendarScreen(
                 )
             }
         }
+    }
+
+    // ストーリー動画のプレイヤー
+    val videoPath = uiState.videoPath
+    if (uiState.isVideoPlaying && videoPath != null) {
+        VideoPlayerDialog(
+            path = videoPath,
+            onDismiss = viewModel::onDismissVideo
+        )
     }
 
     // 写真の詳細シート
@@ -342,6 +380,66 @@ private fun PhotoDetailSheet(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("削除")
+            }
+        }
+    }
+}
+
+@Composable
+private fun VideoPlayerDialog(
+    path: String,
+    onDismiss: () -> Unit
+) {
+    val shareVideo = rememberVideoSharer()
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        FullScreenDialogEffect()
+
+        // 動画は画面いっぱいに表示し、操作ボタンは下端に重ねる
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        ) {
+            VideoPlayer(
+                path = path,
+                modifier = Modifier.fillMaxSize()
+            )
+
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .safeDrawingPadding()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.Black.copy(alpha = 0.5f),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("閉じる")
+                }
+
+                Button(
+                    onClick = { shareVideo(path) },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("共有")
+                }
             }
         }
     }

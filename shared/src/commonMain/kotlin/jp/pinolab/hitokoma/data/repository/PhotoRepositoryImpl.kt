@@ -1,5 +1,7 @@
 package jp.pinolab.hitokoma.data.repository
 
+import jp.pinolab.hitokoma.core.time.firstOfMonth
+import jp.pinolab.hitokoma.core.time.nextMonth
 import jp.pinolab.hitokoma.data.local.db.PhotoDao
 import jp.pinolab.hitokoma.data.mapper.toDomain
 import jp.pinolab.hitokoma.data.mapper.toEntity
@@ -7,7 +9,9 @@ import jp.pinolab.hitokoma.domain.model.DailyPhoto
 import jp.pinolab.hitokoma.domain.repository.PhotoRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.minus
 
 class PhotoRepositoryImpl(
     private val photoDao: PhotoDao
@@ -29,6 +33,12 @@ class PhotoRepositoryImpl(
         return photoDao.observeAllPhotos().map { entities ->
             entities.map { it.toDomain() }
         }
+    }
+
+    override suspend fun getPhotosInMonth(firstOfMonth: LocalDate): List<DailyPhoto> {
+        val start = firstOfMonth.firstOfMonth()
+        val end = start.nextMonth().minus(1, DateTimeUnit.DAY)
+        return photoDao.getPhotosBetween(start.toString(), end.toString()).map { it.toDomain() }
     }
 
     override suspend fun deletePhoto(date: LocalDate) {

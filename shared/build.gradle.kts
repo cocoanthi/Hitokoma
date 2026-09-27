@@ -55,6 +55,10 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.koin.android)
+            // 月のストーリー動画の生成（画像 → MP4）とバックグラウンド実行
+            implementation(libs.androidx.media3.transformer)
+            implementation(libs.androidx.media3.common)
+            implementation(libs.androidx.work.runtime)
         }
     }
 }

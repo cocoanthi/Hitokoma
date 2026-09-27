@@ -9,5 +9,6 @@ interface PhotoRepository {
     suspend fun getPhotoByDate(date: LocalDate): DailyPhoto?
     fun observePhotoByDate(date: LocalDate): Flow<DailyPhoto?> // 今日の一枚表示用
     fun observeAllPhotos(): Flow<List<DailyPhoto>> // 一覧表示用（新しい日付順）
+    suspend fun getPhotosInMonth(firstOfMonth: LocalDate): List<DailyPhoto> // 月のストーリー動画用（古い日付順）
     suspend fun deletePhoto(date: LocalDate)
 }

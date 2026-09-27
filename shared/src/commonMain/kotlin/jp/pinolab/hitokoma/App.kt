@@ -12,6 +12,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -23,6 +24,7 @@ import jp.pinolab.hitokoma.feature.gallery.presentation.PhotoCalendarScreen
 import jp.pinolab.hitokoma.feature.gallery.presentation.PhotoCalendarViewModel
 import jp.pinolab.hitokoma.feature.selector.presentation.PhotoSelectorScreen
 import jp.pinolab.hitokoma.feature.selector.presentation.PhotoSelectorViewModel
+import kotlinx.datetime.LocalDate
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -35,11 +37,22 @@ private enum class AppTab(val label: String, val icon: ImageVector) {
     Calendar(label = "カレンダー", icon = Icons.Default.DateRange),
 }
 
+/**
+ * @param openVideoMonth 通知から起動したときに再生するストーリー動画の月。指定されたらカレンダータブで再生する
+ * @param onVideoMonthOpened openVideoMonth を処理したときに呼ばれる（同じ指定で何度も開かないように）
+ */
 @Composable
 @Preview
-fun App() {
+fun App(
+    openVideoMonth: LocalDate? = null,
+    onVideoMonthOpened: () -> Unit = {}
+) {
     MaterialTheme {
         var selectedTab by rememberSaveable { mutableStateOf(AppTab.Today) }
+
+        LaunchedEffect(openVideoMonth) {
+            if (openVideoMonth != null) selectedTab = AppTab.Calendar
+        }
 
         Scaffold(
             bottomBar = {
@@ -75,6 +88,13 @@ fun App() {
 
                 AppTab.Calendar -> {
                     val viewModel: PhotoCalendarViewModel = koinViewModel()
+
+                    LaunchedEffect(openVideoMonth) {
+                        if (openVideoMonth != null) {
+                            viewModel.openVideo(openVideoMonth)
+                            onVideoMonthOpened()
+                        }
+                    }
 
                     PhotoCalendarScreen(
                         viewModel = viewModel,

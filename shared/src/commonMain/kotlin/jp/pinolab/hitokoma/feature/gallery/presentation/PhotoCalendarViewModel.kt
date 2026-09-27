@@ -3,23 +3,32 @@ package jp.pinolab.hitokoma.feature.gallery.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import jp.pinolab.hitokoma.core.time.todayFlow
+import jp.pinolab.hitokoma.core.time.firstOfMonth
+import jp.pinolab.hitokoma.core.time.nextMonth
+import jp.pinolab.hitokoma.core.time.previousMonth
 import jp.pinolab.hitokoma.domain.model.DailyPhoto
+import jp.pinolab.hitokoma.domain.repository.MonthlyVideoRepository
 import jp.pinolab.hitokoma.feature.gallery.domain.DeleteDailyPhotoUseCase
 import jp.pinolab.hitokoma.feature.gallery.domain.ObserveAllPhotosUseCase
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.todayIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class PhotoCalendarViewModel(
     observeAllPhotosUseCase: ObserveAllPhotosUseCase,
-    private val deleteDailyPhotoUseCase: DeleteDailyPhotoUseCase
+    private val deleteDailyPhotoUseCase: DeleteDailyPhotoUseCase,
+    monthlyVideoRepository: MonthlyVideoRepository
 ) : ViewModel() {
 
     private val initialToday = Clock.System.todayIn(TimeZone.currentSystemDefault())
@@ -30,13 +39,14 @@ class PhotoCalendarViewModel(
     // シート・ダイアログ表示など、画面操作による状態
     private val dialogState = MutableStateFlow(DialogState())
 
-    // DB の変更（新規登録・上書き・削除）と日付の切り替わりがそのままカレンダーに反映される
+    // DB の変更（新規登録・上書き・削除）・日付の切り替わり・動画の生成完了がそのままカレンダーに反映される
     val uiState: StateFlow<PhotoCalendarUiState> = combine(
         observeAllPhotosUseCase(),
         todayFlow(),
         displayedMonth,
-        dialogState
-    ) { photos, today, month, dialog ->
+        dialogState,
+        displayedMonth.flatMapLatest { monthlyVideoRepository.observeVideoPath(it) }
+    ) { photos, today, month, dialog, videoPath ->
         PhotoCalendarUiState(
             displayedMonth = month,
             today = today,
@@ -44,7 +54,9 @@ class PhotoCalendarViewModel(
             isLoading = false,
             selectedPhoto = dialog.selectedPhoto,
             photoPendingDelete = dialog.photoPendingDelete,
-            errorMessage = dialog.errorMessage
+            errorMessage = dialog.errorMessage,
+            videoPath = videoPath,
+            isVideoPlaying = dialog.isVideoPlaying && videoPath != null
         )
     }.stateIn(
         scope = viewModelScope,
@@ -69,6 +81,28 @@ class PhotoCalendarViewModel(
     fun onNextMonth() {
         if (!uiState.value.canGoNextMonth) return
         displayedMonth.update { it.nextMonth() }
+    }
+
+    /**
+     * 「◯月のストーリーを見る」が押されたとき
+     */
+    fun onPlayVideo() {
+        dialogState.update { it.copy(isVideoPlaying = true) }
+    }
+
+    /**
+     * ストーリー動画のプレイヤーを閉じたとき
+     */
+    fun onDismissVideo() {
+        dialogState.update { it.copy(isVideoPlaying = false) }
+    }
+
+    /**
+     * 通知から起動したとき（その月を表示して動画を再生する）
+     */
+    fun openVideo(month: LocalDate) {
+        displayedMonth.value = month.firstOfMonth()
+        dialogState.update { it.copy(selectedPhoto = null, isVideoPlaying = true) }
     }
 
     /**
@@ -123,6 +157,7 @@ class PhotoCalendarViewModel(
     private data class DialogState(
         val selectedPhoto: DailyPhoto? = null,
         val photoPendingDelete: DailyPhoto? = null,
-        val errorMessage: String? = null
+        val errorMessage: String? = null,
+        val isVideoPlaying: Boolean = false
     )
 }

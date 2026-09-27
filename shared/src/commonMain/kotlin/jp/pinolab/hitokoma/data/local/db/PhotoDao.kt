@@ -22,6 +22,10 @@ interface PhotoDao {
     @Query("SELECT * FROM daily_photos ORDER BY dateString DESC")
     fun observeAllPhotos(): Flow<List<PhotoEntity>>
 
+    // 月のストーリー動画用: 期間内の写真を古い日付順に取得（ISO 形式の日付文字列は辞書順で比較できる）
+    @Query("SELECT * FROM daily_photos WHERE dateString BETWEEN :start AND :end ORDER BY dateString ASC")
+    suspend fun getPhotosBetween(start: String, end: String): List<PhotoEntity>
+
     @Query("DELETE FROM daily_photos WHERE dateString = :dateString")
     suspend fun deletePhoto(dateString: String)
 }

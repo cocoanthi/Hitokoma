@@ -1,28 +1,12 @@
 package jp.pinolab.hitokoma.feature.gallery.presentation
 
+import jp.pinolab.hitokoma.core.time.firstOfMonth
+import jp.pinolab.hitokoma.core.time.nextMonth
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.daysUntil
 import kotlinx.datetime.isoDayNumber
-import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-
-// kotlinx-datetime 0.6.1 には YearMonth がないため、「月」はその月の1日の LocalDate で表す
-
-/**
- * その月の1日を返す
- */
-fun LocalDate.firstOfMonth(): LocalDate = LocalDate(year, monthNumber, 1)
-
-/**
- * 前月の1日を返す
- */
-fun LocalDate.previousMonth(): LocalDate = firstOfMonth().minus(1, DateTimeUnit.MONTH)
-
-/**
- * 翌月の1日を返す
- */
-fun LocalDate.nextMonth(): LocalDate = firstOfMonth().plus(1, DateTimeUnit.MONTH)
 
 /**
  * 日曜始まりの月カレンダーのセルを返す。月初前・月末後の空白は null で埋め、要素数は7の倍数になる

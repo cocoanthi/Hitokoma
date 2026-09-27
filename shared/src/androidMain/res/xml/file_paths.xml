@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 共有のために FileProvider で公開するディレクトリ（月のストーリー動画のみ） -->
+<paths>
+    <files-path name="videos" path="videos/" />
+</paths>
