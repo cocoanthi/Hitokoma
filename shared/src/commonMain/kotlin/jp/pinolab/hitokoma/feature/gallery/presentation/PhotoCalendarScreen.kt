@@ -1,8 +1,14 @@
 package jp.pinolab.hitokoma.feature.gallery.presentation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,10 +49,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -86,10 +95,15 @@ fun PhotoCalendarScreen(
         if (uiState.isLoading) {
             CircularProgressIndicator()
         } else {
-            // 6週ある月でも収まるよう縦スクロール可能にする
+            // 6週ある月でも収まるよう縦スクロール可能にする。左右のスワイプで月を切り替える
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .monthSwipe(
+                        canGoNextMonth = uiState.canGoNextMonth,
+                        onPreviousMonth = viewModel::onPreviousMonth,
+                        onNextMonth = viewModel::onNextMonth
+                    )
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
@@ -130,14 +144,27 @@ fun PhotoCalendarScreen(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                CalendarGrid(
-                    cells = uiState.cells,
-                    today = uiState.today,
-                    photosByDate = uiState.photosByDate,
-                    onDayClick = viewModel::onDayClicked,
-                    // デバッグモードでは写真のない日もタップして写真を追加できる
-                    onEmptyDayClick = if (debugMode) viewModel::onDebugEmptyDayClicked else null
-                )
+                // 月が変わったら、進んだ向きにスライドして切り替える
+                AnimatedContent(
+                    targetState = uiState.displayedMonth,
+                    transitionSpec = {
+                        val direction = if (targetState > initialState) 1 else -1
+                        (slideInHorizontally { width -> width * direction } togetherWith
+                            slideOutHorizontally { width -> -width * direction })
+                            .using(SizeTransform(clip = false))
+                    },
+                    label = "CalendarMonth"
+                ) { month ->
+                    CalendarGrid(
+                        // 切り替え中は前の月も描画されるため、uiState.cells ではなく各月から計算する
+                        cells = buildMonthCells(month),
+                        today = uiState.today,
+                        photosByDate = uiState.photosByDate,
+                        onDayClick = viewModel::onDayClicked,
+                        // デバッグモードでは写真のない日もタップして写真を追加できる
+                        onEmptyDayClick = if (debugMode) viewModel::onDebugEmptyDayClicked else null
+                    )
+                }
             }
         }
     }
@@ -614,3 +641,38 @@ private fun DebugAddPhotoSheet(
         }
     }
 }
+
+/**
+ * 左右のスワイプで月を切り替える（右へスワイプで前の月、左へスワイプで次の月）。
+ * 日付のタップや縦スクロールと両立するよう、横方向に一定以上動かしたときだけ切り替える
+ */
+private fun Modifier.monthSwipe(
+    canGoNextMonth: Boolean,
+    onPreviousMonth: () -> Unit,
+    onNextMonth: () -> Unit
+): Modifier = composed {
+    // ジェスチャー検出を作り直さずに最新の値・コールバックを参照する
+    val currentCanGoNextMonth by rememberUpdatedState(canGoNextMonth)
+    val currentOnPreviousMonth by rememberUpdatedState(onPreviousMonth)
+    val currentOnNextMonth by rememberUpdatedState(onNextMonth)
+
+    pointerInput(Unit) {
+        val threshold = SwipeThreshold.toPx()
+        var totalDrag = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { totalDrag = 0f },
+            onHorizontalDrag = { change, dragAmount ->
+                change.consume()
+                totalDrag += dragAmount
+            },
+            onDragEnd = {
+                when {
+                    totalDrag > threshold -> currentOnPreviousMonth()
+                    totalDrag < -threshold && currentCanGoNextMonth -> currentOnNextMonth()
+                }
+            }
+        )
+    }
+}
+
+private val SwipeThreshold = 64.dp
